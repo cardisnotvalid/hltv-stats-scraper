@@ -1,2 +1,3 @@
 # -- Developer Settings --
 debug: True
+max_concurrent_tasks: 5
