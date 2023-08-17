@@ -60,7 +60,17 @@ class Scraper:
             "past_3_month": result[2],
             "head_to_head": result[3]
         }
-        
+    
+    async def get_match_name(self, page_content: str) -> str:
+        soup = BeautifulSoup(page_content, "lxml")
+        return soup.select_one(".event").getText(strip=True)
+    
+    async def get_match_type(self, page_content: str) -> str:
+        soup = BeautifulSoup(page_content, "lxml")
+        return soup.select_one(
+            ".preformatted-text"
+        ).getText(strip=True).split("*")[0].strip()
+    
     async def fetch_lineups(self, page_content: str) -> List[Dict[str, Any]]:
         soup = BeautifulSoup(page_content, "lxml")
         return [{
@@ -247,7 +257,7 @@ class Scraper:
             soup = BeautifulSoup(page_content, "lxml")
             return await data_transformer(soup)
 
-        team_stats = {}
+        team_stats = {"team": team_name}
         data_fetchers = [
             ("", self._parse_overview),
             ("matches", self._parse_matches),
@@ -259,7 +269,7 @@ class Scraper:
 
         for suffix, transformer in data_fetchers:
             team_stats.update(await fetch_data(suffix, transformer))
-
+        
         return team_stats
 
 
@@ -277,7 +287,7 @@ class Scraper:
             "matches": [{
                 "date": item.select_one(".time").getText(strip=True),
                 "event": item.select_one(".gtSmartphone-only").getText(strip=True),
-                "opponent": item.select_one(".flag.flag").getText(strip=True),
+                "opponent": item.select_one(":nth-child(4)").getText(strip=True),
                 "map": item.select_one(".statsMapPlayed").getText(strip=True),
                 "result": item.select_one(".statsDetail").getText(strip=True),
                 "W/L": item.select_one(".text-center:not(.gtSmartphone-only)").getText(strip=True)
