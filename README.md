@@ -15,6 +15,12 @@ python.exe -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
+- Установка webdriver для playwright
+
+```bash
+playwright install
+```
+
 - Запуск скрипта через `start.bat`.
 
 ## Настройка
