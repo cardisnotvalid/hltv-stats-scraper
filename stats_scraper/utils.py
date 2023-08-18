@@ -90,7 +90,7 @@ def save_data_to_txt(data: Dict[str, Any], filename: str) -> str:
     output_text += "\n\nHead to head:\n"
     
     head_to_head = data['match_pre_data']['head_to_head']
-    output_text += f"{' / '.join(f'{key}: {value}' for key, value in head_to_head['stats'].items())}"
+    output_text += f"{' / '.join(f'{key}: {value}' for key, value in head_to_head['stats'].items())}\n"
     
     listing = head_to_head['listing']
     output_text += "\n" if not listing else ""
