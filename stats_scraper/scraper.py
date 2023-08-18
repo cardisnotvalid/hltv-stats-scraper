@@ -65,40 +65,38 @@ class Scraper:
     
     async def get_match_name(self, page_content: str) -> str:
         soup = BeautifulSoup(page_content, "lxml")
-        return soup.select_one(".event").getText(strip=True)
+        return self.get_text(soup, ".event")
     
     async def get_match_type(self, page_content: str) -> str:
         soup = BeautifulSoup(page_content, "lxml")
-        return soup.select_one(
-            ".preformatted-text"
-        ).getText(strip=True).split("*")[0].strip()
+        return self.get_text(soup, ".preformatted-text").split("*")[0].strip()
     
     async def fetch_lineups(self, page_content: str) -> List[Dict[str, Any]]:
         soup = BeautifulSoup(page_content, "lxml")
         return [{
-            "id": int(item.select_one(".flex-align-center > a").get("href").split("/")[2]),
-            "team": item.select_one(".flex-align-center > a").getText(strip=True),
-            "world_rank": int(item.select_one(".teamRanking > a").getText(strip=True).rsplit("#")[-1]) if item.select_one(".teamRanking > a") else None,
+            "id":         int(item.select_one(".flex-align-center > a").get("href").split("/")[2]),
+            "team":       self.get_text(item, ".flex-align-center > a"),
+            "world_rank": int(self.get_text(item, ".teamRanking > a").rsplit("#")[-1]) if self.get_text(item, ".teamRanking > a") is not None else None,
             "players": [{
-                "id": player.get("data-player-id"),
+                "id":       player.get("data-player-id"),
                 "nickname": player.getText(strip=True)
             } for player in item.select(".player > .flagAlign")]
         } for item in soup.select(".lineup")]
         
     async def fetch_match_stats(self, page_content: str) -> List[Dict[str, Any]]:
         soup = BeautifulSoup(page_content, "lxml")
-        team_1 = soup.select_one(".map-stats-infobox-header > :nth-child(2)").getText(strip=True)
-        team_2 = soup.select_one(".map-stats-infobox-header > :nth-child(3)").getText(strip=True)
+        team_1 = self.get_text(soup, ".map-stats-infobox-header > :nth-child(2)")
+        team_2 = self.get_text(soup, ".map-stats-infobox-header > :nth-child(3)")
         return [{
-            "map": item.select_one(".mapname").getText(strip=True),
+            "map": self.get_text(item, ".mapname"),
             "stats": {
                 team_1: (
-                    item.select_one(":nth-child(2) > .map-stats-infobox-winpercentage").getText(strip=True), 
-                    item.select_one(":nth-child(2) > .map-stats-infobox-maps-played").getText(strip=True)
+                    self.get_text(item, ":nth-child(2) > .map-stats-infobox-winpercentage"),
+                    self.get_text(item, ":nth-child(2) > .map-stats-infobox-maps-played")
                 ),
                 team_2: (
-                    item.select_one(":nth-child(3) > .map-stats-infobox-winpercentage").getText(strip=True),
-                    item.select_one(":nth-child(3) > .map-stats-infobox-maps-played").getText(strip=True)
+                    self.get_text(item, ":nth-child(3) > .map-stats-infobox-winpercentage"),
+                    self.get_text(item, ":nth-child(3) > .map-stats-infobox-maps-played")
                 )
             }
         } for item in soup.select(".map-stats-infobox-maps")]
@@ -106,11 +104,11 @@ class Scraper:
     async def fetch_past_3_month(self, page_content: str) -> List[Dict[str, Any]]:
         soup = BeautifulSoup(page_content, "lxml")
         return [{
-            "team": item.select_one(".past-matches-headline").getText(strip=True),
+            "team": self.get_text(item, ".past-matches-headline"),
             "matches": [{
-                "team": match.select_one(".past-matches-teamname").getText(strip=True),
-                "cell": match.select_one(".past-matches-map").getText(strip=True),
-                "score": match.select_one(".past-matches-score").getText(strip=True)
+                "team":  self.get_text(match, ".past-matches-teamname"),
+                "cell":  self.get_text(match, ".past-matches-map"),
+                "score": self.get_text(match, ".past-matches-score")
             }for match in item.select("tbody > tr")]
         } for item in soup.select(".past-matches > :nth-child(3) > .past-matches-box")]
         
@@ -119,37 +117,37 @@ class Scraper:
         head_to_head = soup.select_one(".head-to-head")
         return {
             "stats": {
-                head_to_head.select_one(".team1").getText(strip=True): 
-                    head_to_head.select_one(".right-border > .bold").getText(strip=True),
-                head_to_head.select_one(".team2").getText(strip=True):
-                    head_to_head.select_one(".left-border > .bold").getText(strip=True),
-                "overtimes": head_to_head.select_one(".padding > :nth-child(3) > .bold").getText(strip=True)
+                self.get_text(head_to_head, ".team1"): self.get_text(head_to_head, ".right-border > .bold"),
+                self.get_text(head_to_head, ".team2"): self.get_text(head_to_head, ".left-border > .bold"),
+                "overtimes": self.get_text(head_to_head, ".padding > :nth-child(3) > .bold")
+            } if head_to_head else {
+                "team1": None,
+                "team2": None,
+                "overtimes": None
             },
             "listing": [{
-                "date": row.select_one(".date").getText(strip=True),
-                "team1": row.select_one(".team1").getText(strip=True),
-                "team2": row.select_one(".team2").getText(strip=True),
-                "event": row.select_one(".event").getText(strip=True),
-                "map": row.select_one(".map > .dynamic-map-name-full").getText(strip=True),
-                "result": row.select_one(".result").getText(strip=True)
-            } for row in soup.select(".head-to-head-listing > table > tbody > tr")]
+                "date":   self.get_text(row, ".date"),
+                "team1":  self.get_text(row, ".team1"),
+                "team2":  self.get_text(row, ".team2"), 
+                "event":  self.get_text(row, ".event"),
+                "map":    self.get_text(row, ".map > .dynamic-map-name-full"),
+                "result": self.get_text(row, ".result")
+            } for row in soup.select(".head-to-head-listing > table > tbody > tr") if row]
         }
         
     async def fetch_player_stats(self, page_content: str) -> Dict[str, Any]:
         soup = BeautifulSoup(page_content, "lxml")
         return {
-            "nickname": soup.select_one(".summaryNickname").getText(strip=True),
-            "realname": soup.select_one(".summaryRealname").getText(strip=True),
-            "team": soup.select_one(".SummaryTeamname").getText(strip=True),
-            "age": soup.select_one(".summaryPlayerAge").getText(strip=True),
+            "nickname": self.get_text(soup, ".summaryNickname"),
+            "realname": self.get_text(soup, ".summaryRealname"),
+            "team":     self.get_text(soup, ".SummaryTeamname"),
+            "age":      self.get_text(soup, ".summaryPlayerAge"),
             "short_stats": {
-                stats.select_one(".summaryStatTooltip > b").getText(strip=True):
-                    stats.select_one(".summaryStatBreakdownDataValue").getText(strip=True)
+                self.get_text(stats, ".summaryStatTooltip > b"): self.get_text(stats, ".summaryStatBreakdownDataValue")
                 for stats in soup.select(".summaryStatBreakdown")
             },
             "full_stats": {
-                stats.select_one(":nth-child(1)").getText(strip=True):
-                    stats.select_one(":nth-child(2)").getText(strip=True)
+                self.get_text(stats, ":nth-child(1)"): self.get_text(stats, ":nth-child(2)")
                 for stats in soup.select(".stats-row")
             }
         }
@@ -169,78 +167,60 @@ class Scraper:
         soup = BeautifulSoup(page_content, "lxml")
         return {
             "analytics_summary": [{
-                "team": item.select_one(".team-name").getText(strip=True),
+                "team": self.get_text(item, ".team-name"),
                 "analytic": [
-                    analytic.select_one(".analytics-insights-info").getText(strip=True)
+                    self.get_text(analytic, ".analytics-insights-info")
                     for analytic in item.select(".analytics-insights-insight")
                 ]
             } for item in soup.select(".analytics-insights-wrapper > .col-6")],
             "head_to_head": [{
-                "team": hth.select_one(".team-name").getText(strip=True),
+                "team": self.get_text(hth, ".team-name"),
                 "players": {
-                    player.select_one(".player-nickname").getText(strip=True): {
-                        "3 month": player.select_one(".table-3-months").getText(strip=True),
-                        "event": player.select_one(".table-event").getText(strip=True)
+                    self.get_text(player, ".player-nickname"): {
+                        "3 month": self.get_text(player, ".table-3-months"),
+                        "event":   self.get_text(player, ".table-event")
                     }
                     for player in hth.select(".table-container > tbody > tr")
                 },
                 "last_matchs": [{
-                    "team": match.select_one(".team-name").getText(strip=True),
-                    "score": match.select_one(".recent-score").getText(strip=True),
-                    "type": match.select_one(".match-type").getText(strip=True)
+                    "team":  self.get_text(match, ".team-name"),
+                    "score": self.get_text(match, ".recent-score"),
+                    "type":  self.get_text(match, ".match-type")
                 } for match in hth.select(".analytics-last-matches > a")]
             } for hth in soup.select(".analytics-head-to-head-container")],
             "past_3_month": [{
-                "team": p3m.select_one(".team-name").getText(strip=True),
-                "match_map_count": p3m.select_one(".match-map-count").getText(strip=True),
+                "team":            self.get_text(p3m, ".team-name"),
+                "match_map_count": self.get_text(p3m, ".match-map-count"),
                 "matches": [{
-                    "score": match.select_one("td:not(.best-bet):not(.handicap-data)").getText(strip=True),
-                    "handicap": match.select_one(".handicap-data").getText(strip=True)
+                    "score":    self.get_text(match, "td:not(.best-bet):not(.handicap-data)"),
+                    "handicap": self.get_text(match, ".handicap-data")
                 } for match in p3m.select("tbody > tr")]
             } for p3m in soup.select(".analytics-handicap-wrapper > .col-6")],
             "map_handicap": [{
                 "overall_data": {
-                    "avg_rounds_lost_in_wins": 
-                        handicap.select_one(
-                            ".analytics-handicap-map-data-overall-container > :nth-child(1) > :nth-child(1)"
-                        ).getText(strip=True),
-                    "avg_rounds_won_in_losses": 
-                        handicap.select_one(
-                            ".analytics-handicap-map-data-overall-container > :nth-child(2) > :nth-child(1)"
-                        ).getText(strip=True)
+                    "avg_rounds_lost_in_wins":  self.get_text(
+                        handicap, 
+                        ".analytics-handicap-map-data-overall-container > :nth-child(1) > :nth-child(1)"
+                    ),
+                    "avg_rounds_won_in_losses": self.get_text(
+                        handicap, 
+                        ".analytics-handicap-map-data-overall-container > :nth-child(2) > :nth-child(1)"
+                    )
                 },
                 "individual_maps": [{
-                    "map": item.select_one(".mapname").getText(strip=True),
-                    "avg_rounds_lost_in_wins": item.select_one(
-                        ":nth-child(2):not(.mapname)"
-                    ).getText(strip=True),
-                    "avg_rounds_won_in_losses": item.select_one(
-                        ":nth-child(3):not(.mapname)"
-                    ).getText(strip=True)
+                    "map":                      self.get_text(item, ".mapname"),
+                    "avg_rounds_lost_in_wins":  self.get_text(item, ":nth-child(2):not(.mapname)"),
+                    "avg_rounds_won_in_losses": self.get_text(item, ":nth-child(3):not(.mapname)")
                 } for item in handicap.select("tbody > tr")]
             } for handicap in soup.select(".analytics-handicap-map-wrapper > .col-6")],
             "map_stats": [{
-                "map": item.select_one(
-                    "td[rowspan]"
-                ).getText(strip=True) if item.select_one("td[rowspan]") else None,
-                "team": item.select_one(
-                    ".maps-team-name"
-                ).getText(strip=True),
-                "first_pick": item.select_one(
-                    ".analytics-map-stats-pick-percentage"
-                ).getText(strip=True),
-                "first_ban": item.select_one(
-                    ".analytics-map-stats-ban-percentage"
-                ).getText(strip=True),
-                "win": item.select_one(
-                    ".analytics-map-stats-win-percentage"
-                ).getText(strip=True),
-                "played": item.select_one(
-                    ".analytics-map-stats-played"
-                ).getText(strip=True),
-                "comment": item.select_one(
-                    ".analytics-map-stats-comment"
-                ).getText(strip=True)
+                "map":        self.get_text(item, "td[rowspan]"),
+                "team":       self.get_text(item, ".maps-team-name"),
+                "first_pick": self.get_text(item, ".analytics-map-stats-pick-percentage"),
+                "first_ban":  self.get_text(item, ".analytics-map-stats-ban-percentage"),
+                "win":        self.get_text(item, ".analytics-map-stats-win-percentage"),
+                "played":     self.get_text(item, ".analytics-map-stats-played"),
+                "comment":    self.get_text(item, ".analytics-map-stats-comment")
             } for item in soup.select(".gtSmartphone-only > tbody > tr")]
         }
         
@@ -278,8 +258,7 @@ class Scraper:
     async def _parse_overview(self, soup: BeautifulSoup) -> Dict[str, Any]:
         return {
             "overview": {
-                item.select_one(".small-label-below").getText(strip=True):
-                    item.select_one(".large-strong").getText(strip=True)
+                self.get_text(item, ".small-label-below"): self.get_text(item, ".large-strong")
                 for item in soup.select(".col.standard-box")
             }
         }
@@ -287,22 +266,21 @@ class Scraper:
     async def _parse_matches(self, soup: BeautifulSoup) -> List[Dict[str, Any]]:
         return {
             "matches": [{
-                "date": item.select_one(".time").getText(strip=True),
-                "event": item.select_one(".gtSmartphone-only").getText(strip=True),
-                "opponent": item.select_one(":nth-child(4)").getText(strip=True),
-                "map": item.select_one(".statsMapPlayed").getText(strip=True),
-                "result": item.select_one(".statsDetail").getText(strip=True),
-                "W/L": item.select_one(".text-center:not(.gtSmartphone-only)").getText(strip=True)
+                "date":     self.get_text(item, ".time"),
+                "event":    self.get_text(item, ".gtSmartphone-only"),
+                "opponent": self.get_text(item, ":nth-child(4)"),
+                "map":      self.get_text(item, ".statsMapPlayed"),
+                "result":   self.get_text(item, ".statsDetail"),
+                "W/L":      self.get_text(item, ".text-center:not(.gtSmartphone-only)")
             } for item in soup.select(".stats-table > tbody > tr")]
         }
 
     async def _parse_maps(self, soup: BeautifulSoup) -> List[Dict[str, Any]]:
         return {
             "maps": [{
-                "map": item.select_one(".map-pool").getText(strip=True) if item.select_one(".map-pool") else None,
+                "map": self.get_text(item, ".map-pool"),
                 "stats": {
-                    row.select_one(".strong").getText(strip=True):
-                        row.select_one(":not(.strong)").getText(strip=True)
+                    self.get_text(row, ".strong"): self.get_text(row, ":not(.strong)")
                     for row in item.select(".stats-row")
                 } 
             } for item in soup.select(".two-grid:not(.win-defeat-container) > .col")]
@@ -311,40 +289,47 @@ class Scraper:
     async def _parse_players(self, soup: BeautifulSoup) -> Dict[str, Any]:
         return {
             "overview": [{
-                "nickname": item.select_one(":nth-child(1)").getText(strip=True),
-                "maps": item.select_one(".statsDetail").getText(strip=True),
-                "rounds": item.select_one(":nth-child(3)").getText(strip=True),
-                "k-d diff": item.select_one(":nth-child(4)").getText(strip=True),
-                "k/d": item.select_one(":nth-child(5)").getText(strip=True),
-                "rating": item.select_one(":nth-child(6)").getText(strip=True)
+                "nickname": self.get_text(item, ":nth-child(1)"),
+                "maps":     self.get_text(item, ".statsDetail"),
+                "rounds":   self.get_text(item, ":nth-child(3)"),
+                "k-d diff": self.get_text(item, ":nth-child(4)"),
+                "k/d":      self.get_text(item, ":nth-child(5)"),
+                "rating":   self.get_text(item, ":nth-child(6)")
             } for item in soup.select(".stats-table > tbody > tr")]
         }
 
     async def _parse_flashes(self, soup: BeautifulSoup) -> List[Dict[str, Any]]:
         return {
             "flashes": [{
-                "nickname": item.select_one(":nth-child(1)").getText(strip=True),
-                "maps": item.select_one(".mapsCol").getText(strip=True),
-                "rounds": item.select_one(":nth-child(3)").getText(strip=True),
-                "thrown": item.select_one(":nth-child(4)").getText(strip=True),
-                "blinder": item.select_one(":nth-child(5)").getText(strip=True),
-                "opp_flashed": item.select_one(":nth-child(6)").getText(strip=True),
-                "diff": item.select_one(":nth-child(7)").getText(strip=True),
-                "fa": item.select_one(":nth-child(8)").getText(strip=True),
-                "success": item.select_one(":nth-child(9)").getText(strip=True)
+                "nickname":    self.get_text(item, ":nth-child(1)"),
+                "maps":        self.get_text(item, ".mapsCol"),
+                "rounds":      self.get_text(item, ":nth-child(3)"),
+                "thrown":      self.get_text(item, ":nth-child(4)"),
+                "blinder":     self.get_text(item, ":nth-child(5)"),
+                "opp_flashed": self.get_text(item, ":nth-child(6)"),
+                "diff":        self.get_text(item, ":nth-child(7)"),
+                "fa":          self.get_text(item, ":nth-child(8)"),
+                "success":     self.get_text(item, ":nth-child(9)")
             } for item in soup.select(".stats-table > tbody > tr")]
         }
 
     async def _parse_opening_kills(self, soup: BeautifulSoup) -> List[Dict[str, Any]]:
         return {
             "opening_kills": [{
-                "nickname": item.select_one(":nth-child(1)").getText(strip=True),
-                "maps": item.select_one(".mapsCol").getText(strip=True),
-                "rounds": item.select_one(":nth-child(3)").getText(strip=True),
-                "kpr": item.select_one(":nth-child(4)").getText(strip=True),
-                "dpr": item.select_one(":nth-child(5)").getText(strip=True),
-                "attempts": item.select_one(":nth-child(6)").getText(strip=True),
-                "success": item.select_one(":nth-child(7)").getText(strip=True),
-                "rating": item.select_one(":nth-child(8)").getText(strip=True)
+                "nickname": self.get_text(item, ":nth-child(1)"),
+                "maps":     self.get_text(item, ".mapsCol"),
+                "rounds":   self.get_text(item, ":nth-child(3)"),
+                "kpr":      self.get_text(item, ":nth-child(4)"),
+                "dpr":      self.get_text(item, ":nth-child(5)"),
+                "attempts": self.get_text(item, ":nth-child(6)"),
+                "success":  self.get_text(item, ":nth-child(7)"),
+                "rating":   self.get_text(item, ":nth-child(8)"),
             } for item in soup.select(".stats-table > tbody > tr")]
         }
+
+    def get_text(self, soup: BeautifulSoup, selector: str) -> str | None:
+        text = soup.select_one(selector)
+        if text:
+            return text.getText(strip=True)
+        else:
+            return None
