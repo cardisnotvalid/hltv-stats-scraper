@@ -1,5 +1,6 @@
 import asyncio
 from bs4 import BeautifulSoup
+from datetime import datetime
 
 from stats_scraper.scraper import Scraper
 from stats_scraper.utils import save_data, save_data_to_txt
@@ -8,20 +9,22 @@ async def main() -> None:
     async with Scraper() as scraper:
         match_urls = await scraper.get_all_match_urls()
 
-        semaphore = asyncio.Semaphore(2)
+        semaphore = asyncio.Semaphore(1)
 
         async def process_match(match_url):
             async with semaphore:
                 json_data = {}
                 
+                time = datetime.now().strftime("%d%m%y%H%M%S")
+                
                 match_page_content = await scraper.get_page_content(match_url)
                 
-                match_name = await scraper.get_match_name(match_page_content)
+                match_name = await scraper.get_match_name(match_page_content) + f" ({time})"
                 match_type = await scraper.get_match_type(match_page_content)
                 
                 json_data["match_name"] = f"{match_name}. {match_type}"
                 
-                match_data = await scraper.fetch_all_match_data(match_page_content)
+                match_data = await scraper.fetch_all_match_data(match_page_content, match_name)
                 json_data["match_pre_data"] = match_data
                 
                 save_data(match_name, "pre-match-data", match_data)
