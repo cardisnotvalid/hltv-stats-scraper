@@ -27,7 +27,7 @@ def save_data_to_txt(data: Dict[str, Any], filename: str) -> str:
     filename = f"{filename}.txt"
     filepath = OUT_DIR / filename
     
-    output_text = f"Название турнира + формат: {data['match_name'].rsplit()[0]}\n\n"
+    output_text = f"Название турнира + формат: {data['match_name']}\n\n"
     output_text += "Lineups:\n\n"
     
     lineup = data['match_pre_data']['lineups'][0]
