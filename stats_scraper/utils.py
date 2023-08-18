@@ -97,10 +97,10 @@ def save_data_to_txt(data: Dict[str, Any], filename: str) -> str:
     
     for item in listing:
         for key, value in item.items():
-            output_text += f"{key}: {value}\n"
+            output_text += f"- {key}: {value}\n"
         output_text += "\n"
     
-    output_text += "\n\nAnalytics center.\n"
+    output_text += "\nAnalytics center.\n"
     
     output_text += "\nAnalytics summary:\n"
     analytics = data['match_analytics']
