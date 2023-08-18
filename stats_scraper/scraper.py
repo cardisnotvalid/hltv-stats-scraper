@@ -29,6 +29,8 @@ class Scraper:
         logger.debug(f"Получение содержимого страницы: {url}")
         
         async with async_playwright() as playwright:
+            await asyncio.sleep(5)
+            
             browser = await playwright.chromium.launch(headless=True)
             context = await browser.new_context(user_agent=UserAgent().random)
             page = await context.new_page()
@@ -42,11 +44,11 @@ class Scraper:
         soup = BeautifulSoup(page_content, "lxml")
         return [
             self.base_url + item.select_one(".match").get("href") 
-            for item in soup.select(".upcomingMatch[team1]")
+            for item in soup.select_one(".upcomingMatchesSection").select(".upcomingMatch[team1]")
         ]
     
-    async def fetch_all_match_data(self, page_content: str) -> Dict[str, Any]:
-        logger.info("Получение данных матча")
+    async def fetch_all_match_data(self, page_content: str, match_name: str) -> Dict[str, Any]:
+        logger.info(f"Получение данных матча: {match_name}")
         
         result = await asyncio.gather(
             self.fetch_lineups(page_content),
@@ -76,7 +78,7 @@ class Scraper:
         return [{
             "id": int(item.select_one(".flex-align-center > a").get("href").split("/")[2]),
             "team": item.select_one(".flex-align-center > a").getText(strip=True),
-            "world_rank": int(item.select_one(".teamRanking > a").getText(strip=True).rsplit("#")[-1]),
+            "world_rank": int(item.select_one(".teamRanking > a").getText(strip=True).rsplit("#")[-1]) if item.select_one(".teamRanking > a") else None,
             "players": [{
                 "id": player.get("data-player-id"),
                 "nickname": player.getText(strip=True)
