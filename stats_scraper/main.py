@@ -8,7 +8,7 @@ async def main() -> None:
     async with Scraper() as scraper:
         match_urls = await scraper.get_all_match_urls()
 
-        semaphore = asyncio.Semaphore(1)
+        semaphore = asyncio.Semaphore(2)
 
         async def process_match(match_url):
             async with semaphore:
