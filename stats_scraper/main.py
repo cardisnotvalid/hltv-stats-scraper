@@ -48,7 +48,7 @@ async def main() -> None:
             json_data["match_teams"] = []
             for lineup in match_data["lineups"]:
                 team_id, team_name = lineup["id"], lineup["team"]
-                team_name = team_name.replace(" ", "-").lower()
+                team_name = team_name.replace(" ", "-").replace("'", "").lower()
                 team_stats = await scraper.fetch_team_stats(team_id, team_name)
                 
                 json_data["match_teams"].append(team_stats)
